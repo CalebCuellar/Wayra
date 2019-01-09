@@ -1,0 +1,291 @@
+PARAMETERS pcCursor_Detalle,;
+pcDocu_Orig_Tipo,pcDocu_Orig_Serie,pcDocu_Orig_Numero,pcDocu_Orig_Fecha,pcDocu_Orig_Motivo,pcDocu_Orig_Almacen,pcDocu_Orig_Moneda,;
+pcDocu_Orig_TC_Codigo,pcDocu_Orig_TC_Valor,pcDocu_Orig_OP_Codigo,;
+pcDocu_Dest_Tipo,pcDocu_Dest_Serie,pcDocu_Dest_Numero,pcDocu_Dest_Almacen,pcDocu_Dest_OP_Codigo
+pcDocu_Dest_OP_Codigo = IIF(TYPE("pcDocu_Dest_OP_Codigo") = "C" AND !EMPTY(pcDocu_Dest_OP_Codigo),pcDocu_Dest_OP_Codigo,pcDocu_Orig_OP_Codigo)
+ln_Select = SELECT()
+*** Abriendo Tablas
+llMotivo_Used = USED("maesmoti")
+IF !llMotivo_Used
+	SELECT 0
+	USE maesmoti AGAIN
+ENDIF
+llAlmacen_Used = USED("maesalma")
+IF !llAlmacen_Used
+	SELECT 0
+	USE maesalma AGAIN
+ENDIF
+DO CASE
+	CASE pcDocu_Dest_Tipo = "PARI"
+		SELECT 0
+		USE pari1 ORDER pari1 ALIAS aPart1 AGAIN
+		SELECT 0
+		USE pari2 ORDER pari2 ALIAS aPart2 AGAIN
+	CASE pcDocu_Dest_Tipo = "PARS"
+		SELECT 0
+		USE pars1 ORDER pars1 ALIAS aPart1 AGAIN
+		SELECT 0
+		USE pars2 ORDER pars2 ALIAS aPart2 AGAIN
+	CASE pcDocu_Dest_Tipo = "GUIA"
+		SELECT 0
+		USE guia1 ORDER guia1 ALIAS aPart1 AGAIN
+		SELECT 0
+		USE guia2 ORDER guia2 ALIAS aPart2 AGAIN
+ENDCASE
+llOP_Used = USED("maes_op")
+IF !llOP_Used
+	SELECT 0
+	USE maes_op AGAIN
+ENDIF
+***
+*** Ordenando Tablas
+SELECT maesmoti
+lnMotivo_Recno = IIF(!EOF(),RECNO(),0)
+lcMotivo_Order = ORDER()
+SET ORDER TO codigo
+SELECT maesalma
+lnAlmacen_Recno = IIF(!EOF(),RECNO(),0)
+lcAlmacen_Order = ORDER()
+SET ORDER TO codigo
+SELECT maes_op
+lnOP_Recno = IIF(!EOF(),RECNO(),0)
+lcOP_Order = ORDER()
+SET ORDER TO codigo
+***
+SELE maesmoti
+SEEK IIF(pcDocu_Orig_Tipo = "PARI","ING","SAL") + PADR(pcDocu_Orig_Motivo,3)
+IF FOUND() AND maesmoti.indi_proc = "04" AND !EMPTY(maesmoti.cod_ingtra) AND !EMPTY(pcDocu_Dest_Almacen)
+	IF EMPTY(pcDocu_Dest_Serie) OR EMPTY(pcDocu_Dest_Numero)
+		SELECT maesalma
+		SEEK pcDocu_Dest_Almacen
+		pcDocu_Dest_Serie = PADR(maesalma.serparsal,4)
+		pcDocu_Dest_Numero = DOC_OBT_NUM("DOC" + pcDocu_Dest_Tipo,pcDocu_Dest_Serie,.F.,"C",10)
+		= DOC_VER_NUM("aPart1","pcDocu_Dest_Serie","pcDocu_Dest_Numero")
+		= DOC_ACT_NUM("DOC" + pcDocu_Dest_Tipo,pcDocu_Dest_Serie,INT(VAL(pcDocu_Dest_Numero)))
+	ENDIF
+	SELECT maesalma
+	SEEK pcDocu_Orig_Almacen
+	SELECT maes_op
+	SEEK pcDocu_Dest_OP_Codigo
+	*** Ingresando Cabecera
+	SELECT aPart1
+	= BLOQUEAFILE()
+	APPEND BLANK
+	REPLACE serie		WITH pcDocu_Dest_Serie
+	REPLACE nrodoc		WITH pcDocu_Dest_Numero
+	REPLACE fecha_reg	WITH pcDocu_Orig_Fecha
+	REPLACE cod_moti	WITH maesmoti.cod_ingtra
+	REPLACE cod_alma	WITH pcDocu_Dest_Almacen
+	REPLACE cod_alma1	WITH pcDocu_Orig_Almacen
+	IF pcDocu_Dest_Tipo = "PARI"
+		REPLACE cod_auxi	WITH maesalma.cod_prov
+	ELSE
+		REPLACE cod_prov	WITH maesalma.cod_prov
+	ENDIF
+	REPLACE cod_mone	WITH pcDocu_Orig_Moneda
+	&& Documento Relacionado
+	REPLACE docrel_tip	WITH pcDocu_Orig_Tipo
+	REPLACE docrel_ser	WITH pcDocu_Orig_Serie
+	REPLACE docrel_nro	WITH pcDocu_Orig_Numero
+	REPLACE docrel_fec	WITH pcDocu_Orig_Fecha
+	REPLACE docrel_aut	WITH .T.
+	&&
+	REPLACE cod_anula	WITH .F.
+	REPLACE tipcam_cod	WITH pcDocu_Orig_TC_Codigo
+	REPLACE tipcam_val	WITH pcDocu_Orig_TC_Valor
+	REPLACE new_usu		WITH _usuario
+	REPLACE new_fec		WITH DATE()
+	REPLACE new_hor		WITH TIME()
+	&& OP
+	REPLACE cod_ordprd	WITH pcDocu_Dest_OP_Codigo
+	REPLACE des_ordprd	WITH maes_op.descliop
+	REPLACE cod_ordpr1	WITH pcDocu_Orig_OP_Codigo
+	&&
+	UNLOCK
+	***
+	*** Ingresando Detalle
+	SELECT (pcCursor_Detalle)
+	SCAN
+		STORE 0 TO lnPrcPrm1,lnPrcPrm2
+		IF pcDocu_Dest_Tipo = "PARI"
+			lnPrcPrm1 = &pcCursor_Detalle..precio_1
+			lnPrcPrm2 = &pcCursor_Detalle..precio_2
+		*ELSE
+		*	= SALDO_ARTICULO("",&pcCursor_Detalle..cod_articu,&pcCursor_Detalle..nro_lote,pcDocu_Orig_Fecha,"","","","lnPrcPrm1","lnPrcPrm2")
+		ENDIF
+		&& OP Origen
+		lcDocu_Dest_OP_Codigo = IIF(!EMPTY(&pcCursor_Detalle..cod_ordpr1),&pcCursor_Detalle..cod_ordpr1,&pcCursor_Detalle..cod_ordprd)
+		SELECT maes_op
+		SEEK lcDocu_Dest_OP_Codigo
+		&&
+		SELECT aPart2
+		= BLOQUEAFILE()
+		APPEND BLANK
+		REPLACE serie		WITH pcDocu_Dest_Serie
+		REPLACE nrodoc		WITH pcDocu_Dest_Numero
+		REPLACE item		WITH &pcCursor_Detalle..item
+		REPLACE cod_articu	WITH &pcCursor_Detalle..cod_articu
+		REPLACE des_articu	WITH &pcCursor_Detalle..des_articu
+		REPLACE cod_intemp	WITH &pcCursor_Detalle..cod_intemp
+		REPLACE cantidad	WITH &pcCursor_Detalle..cantidad
+		REPLACE peso_bruto	WITH &pcCursor_Detalle..peso_bruto
+		REPLACE cant_conos	WITH &pcCursor_Detalle..cant_conos
+		REPLACE peso_conos	WITH &pcCursor_Detalle..peso_conos
+		REPLACE precio_1	WITH lnPrcPrm1
+		REPLACE precio_2	WITH lnPrcPrm2
+		REPLACE obs_deta	WITH &pcCursor_Detalle..obs_deta
+		&& OP
+		REPLACE cod_ordprd	WITH lcDocu_Dest_OP_Codigo
+		REPLACE des_ordprd	WITH maes_op.descliop
+		REPLACE cod_ordpr1	WITH &pcCursor_Detalle..cod_ordprd
+		&&
+		REPLACE nro_lote	WITH &pcCursor_Detalle..nro_lote
+		REPLACE tip_produc	WITH "P"
+		REPLACE ubica1		WITH &pcCursor_Detalle..ubica1
+		REPLACE new_usu		WITH _usuario
+		REPLACE new_fec		WITH DATE()
+		REPLACE new_hor		WITH TIME()
+		*** Documento Relacionado
+		REPLACE docrel_tip	WITH pcDocu_Orig_Tipo
+		REPLACE docrel_ser	WITH pcDocu_Orig_Serie
+		REPLACE docrel_nro	WITH pcDocu_Orig_Numero
+		REPLACE docrel_itm	WITH &pcCursor_Detalle..item && 05/02/18 &pcCursor_Detalle..docrel_itm
+		***
+		*** Documento Origen de Precio
+		IF pcDocu_Dest_Tipo = "PARI"
+			&& Destino - Parte de Ingreso
+			REPLACE docori_tip	WITH pcDocu_Orig_Tipo
+			REPLACE docori_ser	WITH pcDocu_Orig_Serie
+			REPLACE docori_nro	WITH pcDocu_Orig_Numero
+			REPLACE docori_itm	WITH &pcCursor_Detalle..item
+			REPLACE rad_moti1	WITH IIF(pcDocu_Orig_Tipo = "PARI","ING","SAL")
+			REPLACE cod_moti1	WITH pcDocu_Orig_Motivo
+			&&
+		ENDIF
+		UNLOCK
+		IF pcDocu_Dest_Tipo != "PARI"
+			&& Destino - Parte de Salida o Guía de Remisión (Actualiza el Cursor Detalle con el Documento de Salida)
+			SELECT (pcCursor_Detalle)
+			REPLACE docori_tip	WITH pcDocu_Dest_Tipo
+			REPLACE docori_ser	WITH pcDocu_Dest_Serie
+			REPLACE docori_nro	WITH pcDocu_Dest_Numero
+			REPLACE docori_itm	WITH &pcCursor_Detalle..item
+			REPLACE rad_moti1	WITH "SAL"
+			REPLACE cod_moti1	WITH aPart1.cod_moti
+			REPLACE precio_1	WITH lnPrcPrm1
+			REPLACE precio_2	WITH lnPrcPrm2
+			&&
+		ENDIF
+		***
+	ENDSCAN
+	GO TOP
+	***
+	*** Actualizando el Kardex
+	&& Conservando Valores (las variables sirven para la función ING_KAR)
+	*IF TYPE("m.docrel_tip") != "U"
+	*	lc_docrel_tip = m.docrel_tip
+	*ENDIF
+	*IF TYPE("m.docrel_ser") != "U"
+	*	lc_docrel_ser = m.docrel_ser
+	*ENDIF
+	*IF TYPE("m.docrel_nro") != "U"
+	*	lc_docrel_nro = m.docrel_nro
+	*ENDIF
+	*IF TYPE("m.cod_moti") != "U"
+	*	lc_cod_moti = m.cod_moti
+	*ENDIF
+	*IF TYPE("m.cod_ordprd") != "U" && ccp 11-05-17
+	*	lc_cod_ordprd = m.cod_ordprd
+	*ENDIF
+	*IF TYPE("m.des_ordprd") != "U" && ccp 11-05-17
+	*	lc_des_ordprd = m.des_ordprd
+	*ENDIF
+	*IF TYPE("m.cod_ordpr1") != "U" && ccp 11-05-17
+	*	lc_cod_ordpr1 = m.cod_ordpr1
+	*ENDIF
+	*IF TYPE("m.cod_alma") != "U" && ccp 11-05-17
+	*	lc_cod_alma = m.cod_alma
+	*ENDIF
+	*IF TYPE("m.cod_alma1") != "U" && ccp 11-05-17
+	*	lc_cod_alma1 = m.cod_alma1
+	*ENDIF
+	&&
+	IF pcDocu_Dest_Tipo = "PARI"
+		*m.docrel_tip = pcDocu_Orig_Tipo && se puso comentario el 11-05-17
+		*m.docrel_ser = pcDocu_Orig_Serie && se puso comentario el 11-05-17
+		*m.docrel_nro = pcDocu_Orig_Numero && se puso comentario el 11-05-17
+		DO ING_KAR WITH pcDocu_Dest_Tipo,aPart1.cod_moti,aPart1.serie,aPart1.nrodoc,;
+			aPart1.cod_alma,aPart1.cod_alma1,aPart1.fecha_reg,aPart1.tipcam_cod,aPart1.tipcam_val,"aPart2",aPart1.cod_mone,aPart1.cod_auxi
+	ELSE
+		DO SAL_KAR WITH pcDocu_Dest_Tipo,aPart1.cod_moti,aPart1.serie,aPart1.nrodoc,;
+			aPart1.cod_alma,aPart1.cod_alma1,aPart1.fecha_reg,aPart1.tipcam_cod,aPart1.tipcam_val,"aPart2",aPart1.cod_mone
+	ENDIF
+	&& Restaurando Valores
+	*IF TYPE("lc_docrel_tip") != "U"
+	*	m.docrel_tip = lc_docrel_tip
+	*ENDIF
+	*IF TYPE("lc_docrel_ser") != "U"
+	*	m.docrel_ser = lc_docrel_ser
+	*ENDIF
+	*IF TYPE("lc_docrel_nro") != "U"
+	*	m.docrel_nro = lc_docrel_nro
+	*ENDIF
+	*IF TYPE("lc_cod_moti") != "U"
+	*	m.cod_moti = lc_cod_moti
+	*ENDIF
+	*IF TYPE("lc_cod_ordprd") != "U" && ccp 11-05-17
+	*	m.cod_ordprd = lc_cod_ordprd
+	*ENDIF
+	*IF TYPE("lc_des_ordprd") != "U" && ccp 11-05-17
+	*	m.des_ordprd = lc_des_ordprd
+	*ENDIF
+	*IF TYPE("lc_cod_ordpr1") != "U" && ccp 11-05-17
+	*	m.cod_ordpr1 = lc_cod_ordpr1
+	*ENDIF
+	*IF TYPE("lc_cod_alma") != "U" && ccp 11-05-17
+	*	m.cod_alma = lc_cod_alma
+	*ENDIF
+	*IF TYPE("lc_cod_alma1") != "U" && ccp 11-05-17
+	*	m.cod_alma1 = lc_cod_alma1
+	*ENDIF
+	&&
+	***
+ENDIF
+*** Retornando Orden
+SELECT maesmoti
+IF !EMPTY(lcMotivo_Order)
+	SET ORDER TO &lcMotivo_Order.
+ENDIF
+IF lnMotivo_Recno > 0
+	GO lnMotivo_Recno
+ENDIF
+SELECT maesalma
+IF !EMPTY(lcAlmacen_Order)
+	SET ORDER TO &lcAlmacen_Order.
+ENDIF
+IF lnAlmacen_Recno > 0
+	GO lnAlmacen_Recno
+ENDIF
+SELECT maes_op
+IF !EMPTY(lcOP_Order)
+	SET ORDER TO &lcOP_Order.
+ENDIF
+IF lnOP_Recno > 0
+	GO lnOP_Recno
+ENDIF
+***
+*** Cerrando Tablas
+IF !llMotivo_Used
+	USE IN maesmoti
+ENDIF
+IF !llAlmacen_Used
+	USE IN maesalma
+ENDIF
+USE IN aPart1
+USE IN aPart2
+IF !llOP_Used
+	USE IN maes_op
+ENDIF
+***
+SELECT(ln_Select)
+RETURN

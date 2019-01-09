@@ -1,0 +1,2 @@
+PARAMETERS pc_TipoAlmacen
+DO FORM rpstock WITH pc_TipoAlmacen

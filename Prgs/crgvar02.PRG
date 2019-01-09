@@ -1,0 +1,39 @@
+PUBLIC _rt_sis_, _rt_bas_,_rt_siad_,_direc,_Carpeta_Foto
+_Carpeta_Foto = ""
+&& ccp 18/08/14
+lcRuta = SYS(5) + SYS(2003)
+lcRuta = LEFT(lcRuta,RAT("\",lcRuta)-1)
+&&
+_rt_sis_  = lcRuta
+_rt_bas_ = _rt_sis_ + '\Data02'
+&& ccp 18/08/14
+SET PROCEDURE TO LIBRARY
+lcPathDB = ReadFileIni(_rt_sis_ + "\CONFIG.INI","BSC","DB_PATH")
+IF ISNULL(lcPathDB) OR EMPTY(lcPathDB)
+	_rt_siad_ = lcRuta + "\WP01"
+ELSE
+	IF LEFT(lcPathDB,1) = "\"
+		_rt_siad_ = lcRuta + lcPathDB
+	ELSE
+		IF RAT("\",lcRuta) > 0
+			lcRuta = LEFT(lcRuta,RAT("\",lcRuta)-1)
+		ENDIF
+		_rt_siad_ = lcRuta + "\" + lcPathDB
+	ENDIF
+ENDIF
+&&
+_direc = _rt_siad_
+&& ccp 23/10/15 Ruta de la carpeta fotos
+lcPathPicture = ReadFileIni(_rt_sis_ + "\CONFIG.INI","BSC","FOTOS_PATH")
+IF !ISNULL(lcPathPicture) AND !EMPTY(lcPathPicture)
+	IF LEFT(lcPathPicture,1) = "\"
+		_Carpeta_Foto = _rt_sis_ + lcPathPicture
+	ELSE
+		IF RAT("\",_rt_sis_) > 0
+			_Carpeta_Foto = LEFT(_rt_sis_,RAT("\",_rt_sis_)-1) + "\" + lcPathPicture
+		ELSE
+			_Carpeta_Foto = _rt_sis_ + "\" + lcPathPicture
+		ENDIF
+	ENDIF
+ENDIF
+&&

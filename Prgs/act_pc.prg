@@ -1,0 +1,2 @@
+PARAMETERS pc_TipoAlmacen
+DO FORM act_pc WITH pc_TipoAlmacen

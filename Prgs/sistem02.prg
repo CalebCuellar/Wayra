@@ -1,0 +1,183 @@
+CLOSE DATABASES
+DO crgvar02
+DO inicio IN Library
+&& ccp 22/08/14
+*!*	IF DATE() > CTOD("05/09/2014")
+*!*		CREATE CURSOR cFiles(nombre C(20),extension C(3))
+*!*		INSERT INTO cFiles VALUES("ORDPEDI1","EXE")
+*!*		INSERT INTO cFiles VALUES("ORDREQU1","EXE")
+*!*		lnQuantity = ADIR(laFilesExes,_rt_sis_ + "\Exes\*.exe")
+*!*		SELECT cFiles
+*!*		SCAN
+*!*			lnPosition = ASCAN(laFilesExes,ALLTRIM(cFiles.nombre) + "." + ALLTRIM(cFiles.extension))
+*!*			IF lnPosition != 0
+*!*				lnRow = ASUBSCRIPT(laFilesExes,lnPosition,1)
+*!*				IF lnRow != 0
+*!*					IF laFilesExes[lnRow,3] = CTOD("22/08/2014")
+*!*						lcFileBackup = _rt_sis_ + "\Exes\" + ALLTRIM(cFiles.nombre) + "_CCP." + ALLTRIM(cFiles.extension)
+*!*						lcFileTemp = _rt_sis_ + "\Exes\" + ALLTRIM(cFiles.nombre) + "_TMP." + ALLTRIM(cFiles.extension)
+*!*						lcFileCurrent = _rt_sis_ + "\Exes\" + ALLTRIM(cFiles.nombre) + "." + ALLTRIM(cFiles.extension)
+*!*						IF FILE(lcFileBackup)
+*!*							IF FILE(lcFileCurrent)
+*!*								DELETE FILE &lcFileCurrent. RECYCLE
+*!*							ENDIF
+*!*							IF !FILE(lcFileCurrent)
+*!*								COPY FILE &lcFileBackup. TO &lcFileTemp.
+*!*								RENAME &lcFileTemp. TO &lcFileCurrent.
+*!*							ENDIF
+*!*						ENDIF
+*!*					ENDIF
+*!*				ENDIF
+*!*			ENDIF
+*!*		ENDSCAN
+*!*		USE
+*!*	ENDIF
+&&
+lnNivelClave = 0
+lnDias = 0
+sw_ingusu = .F.
+DO FORM frm_pass
+_SCREEN.Hide()
+frm_pass.Show()
+READ EVENTS
+IF sw_ingusu
+	llLoadForm = .F.
+	IF !_admin
+		DO CASE
+			CASE lnNivelClave = 1
+				*** La Contraseña ha caducado
+				MESSAGEBOX("A continuación deberá cambiar su Contraseña.",0+48,"Contraseña Caducada")
+				llLoadForm = .T.
+				***
+			CASE lnNivelClave = 2
+				lnNivelClave = 0
+				*** Alertar la próxima caducidad de la Contraseña
+				llLoadForm = (MESSAGEBOX("Su contraseña caducara en " + ALLTRIM(STR(lnDias)) + " día(s)." + CHR(13) +;
+					"¿Desea cambiarla ahora?",4+32,"Confirmación") = 6)
+				***
+		ENDCASE
+	ELSE
+		lnNivelClave = 0
+	ENDIF
+	IF llLoadForm
+		frmCambiar = CREATEOBJECT("cam_pass",.T.)
+		frmCambiar.Visible = .T.
+		READ EVENTS
+		RELEASE frmCambiar
+	ENDIF
+	IF lnNivelClave = 0
+		SELECT 0
+		USE &_rt_siad_.\conf\maevar ORDER radcod
+		&& ccp 19/08/14
+		llUsed = USED("maecia")
+		SELECT * FROM maecia WHERE codcia = ocia INTO CURSOR curTemp
+		ncia = ALLTRIM(curTemp.nombre) && Nombre 1
+		ncia1 = ALLTRIM(curTemp.nombre1) && Nombre 2
+		rcia = ALLTRIM(curTemp.ruc) && Ruc
+		dcia = ALLTRIM(curTemp.direccion) && Dirección 1
+		dcia1 = ALLTRIM(curTemp.direccion1) && Dirección 2
+		tcia = ALLTRIM(curTemp.telefono) && Teléfono 1
+		tcia1 = ALLTRIM(curTemp.telefono1) && Teléfono 2
+		ccia = ALLTRIM(curTemp.correo) && Correo
+		wcia = ALLTRIM(curTemp.web) && Pagina Web
+		USE IN curTemp
+		USE IN IIF(USED("maecia") AND !llUsed,"maecia",0)
+		&&
+		SELECT maevar
+		SEEK "ZZZ" + "PXC"
+		IF !FOUND()
+			= BLOQUEAFILE()
+			APPEND BLANK
+			REPLACE varrad WITH "ZZZ"
+			REPLACE varcod WITH "PXC"
+			REPLACE vardel WITH "PESO POR CONO"
+			UNLOCK
+		ENDIF
+		SELECT maevar
+		SEEK "PXC" + "PXC"
+		IF !FOUND()
+			= BLOQUEAFILE()
+		     APPEND BLANK
+		     REPLACE varrad WITH "PXC"
+		     REPLACE varcod WITH "PXC"
+		     REPLACE vardel WITH "PESO POR CONO"
+		     REPLACE varfac WITH 0.030 
+		     UNLOCK
+		ENDIF
+		USE
+		DO crea_exportar
+		_SCREEN.show()
+		_SCREEN.caption = "SISTEMA ALMACÉN Y VENTAS  -//-  " + ncia
+		DO act_scr_menu
+		_SCREEN.width = 1020
+		_SCREEN.Height = 700
+		_SCREEN.DrawStyle = 5
+		_SCREEN.Closable = .F.
+		_SCREEN.MaxButton = .T.
+		_SCREEN.MinButton = .T.
+		_SCREEN.AutoCenter = .T.
+		_SCREEN.AutoCenter = .T.
+		_SCREEN.WindowState = 2
+		DO menuopc WITH "SIS"
+		ACTIVATE MENU _MSYSMENU
+		READ EVENTS
+	ENDIF
+ENDIF
+RETURN
+ENDPROC
+**
+PROCEDURE crea_exportar
+IF !FILE("c:\exportar\exportar.bat")
+	file = "c:\windows\temp\EXPORTAR.bat"
+	handle = FCREATE(file)
+	= FPUTS(handle,"cls")
+	= FPUTS(handle,"c:")
+	= FPUTS(handle,"cd\")
+	= FPUTS(handle,"md EXPORTAR")
+	= FPUTS(handle,"copy c:\windows\temp\EXPORTAR.BAT c:\exportar\EXPORTAR.BAT")
+	= FPUTS(handle,"exit")
+	= FPUTS(handle," ")
+	= FCLOSE(handle)
+	IF FILE("c:\windows\temp\exportar.bat")
+		RUN c:\windows\temp\exportar.bat
+		COPY FILE c:\windows\temp\exportar.bat TO c:\exportar\exportar.bat
+	ENDIF
+ENDIF
+RETURN
+ENDPROC
+**
+PROCEDURE Act_Scr_Menu
+DO CASE
+     CASE PADR(TIME(),2) <= '08'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-08.jpg"
+     CASE PADR(TIME(),2) = '09'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-09.jpg"
+     CASE PADR(TIME(),2) = '10'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-10.jpg"
+     CASE PADR(TIME(),2) = '11'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-11.jpg"
+     CASE PADR(TIME(),2) = '12'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-12.jpg"
+     CASE PADR(TIME(),2) = '13'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-13.jpg"
+     CASE PADR(TIME(),2) = '14'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-14.jpg"
+     CASE PADR(TIME(),2) = '15'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-15.jpg"
+     CASE PADR(TIME(),2) = '16'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-16.jpg"
+     CASE PADR(TIME(),2) = '17'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-17.jpg"
+     CASE PADR(TIME(),2) = '18'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-18.jpg"
+     CASE PADR(TIME(),2) = '19'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-19.jpg"
+     CASE PADR(TIME(),2) = '20'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-20.jpg"
+     CASE PADR(TIME(),2) = '21'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-21.jpg"
+     CASE PADR(TIME(),2) >= '22'
+          _SCREEN.picture = _rt_sis_ + "\ICON\sistema-22.jpg"
+ENDCASE
+RETURN
+ENDPROC

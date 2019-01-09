@@ -1,0 +1,2 @@
+PARAMETERS pc_TipoAlmacen
+DO FORM r_karuni WITH pc_TipoAlmacen

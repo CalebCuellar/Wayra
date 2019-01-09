@@ -1,0 +1,2 @@
+PARAMETERS pc_TipoAlmacen
+DO FORM rpstkcon WITH pc_TipoAlmacen

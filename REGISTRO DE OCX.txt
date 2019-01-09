@@ -1,0 +1,6 @@
+Open a Command Prompt as administrator (right click on a shortcut to the Command Prompt and select "Run as Administrator").
+
+Run this command:
+C:\Windows\SysWOW64\regsvr32 C:\Windows\SysWOW64\MSCOMCTL.OCX
+C:\Windows\SysWOW64\regsvr32 C:\Windows\SysWOW64\mscomm32.OCX
+C:\Windows\SysWOW64\regsvr32 C:\Windows\SysWOW64\RICHTX32.OCX

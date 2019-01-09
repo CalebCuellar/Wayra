@@ -1,0 +1,220 @@
+PARAMETERS pcOpNumber,pcProductType,pcProductCode,pcOsNumber,pcCursorName,pcVarCost1,pcVarCost2
+* pcOpNumber: Número de Orden de Producción
+* pcProductType: Tipo de Producto (IN=Insumo, PT=Producto Terminado)
+* pcProductCode: Código de Producto
+* pcOsNumber: Número de Orden de Servicio (Si pcProductType = "IN" se revisa Orden de Servicio de Insumos, caso contrario Ordenes de Servicio de PT)
+* pcCursorName: Nombre del Cursor donde se devuelve el detalle del Consumo
+* pcVarCost1: Nombre de Variable de retorno para el Costo de Producción en Soles
+* pcVarCost2: Nombre de Variable de retorno para el Costo de Producción en Dolares
+ln_Select = SELECT()
+pcOsNumber = IIF(TYPE("pcOsNumber") = "C",pcOsNumber,"") && Si tiene Número de OS, solo se debe calcular dicha OS, caso contrario, todas las OS vinculadas a la OP
+DO CASE
+	CASE pcProductType = "IN"
+		lcTableSiglaOS = "ORDS"
+		lcTableArticle = "maesinsu"
+	CASE pcProductType = "PT"
+		lcTableSiglaOS = "NOTS"
+		lcTableArticle = "maesarti"
+ENDCASE
+*** Abriendo Tablas
+SELE 0
+lcTable = lcTableSiglaOS + "1"
+USE (lcTable) ORDER (lcTable) ALIAS tOS1 AGAIN
+SELE 0
+lcTable = lcTableSiglaOS + "2"
+USE (lcTable) ORDER cod_articu ALIAS tOS2 AGAIN
+SELE 0
+USE maestise ORDER codigo ALIAS tTipSer AGAIN
+SELE 0
+USE maesproc ORDER codigo ALIAS tTipPro AGAIN
+SELECT 0
+USE maesunid ORDER codigo ALIAS tUM AGAIN
+
+llCursorState = (TYPE("pcCursorName") = "C" AND !EMPTY(pcCursorName))
+pcCursorName = IIF(llCursorState,pcCursorName,"c" + SYS(3))
+CREATE CURSOR &pcCursorName.(os_tipo C(2),os_serie C(4),os_nrodoc C(10),cod_tipser C(5),des_tipser C(150),procodigo C(5),prodescri C(30),;
+	or_tipo C(4),or_serie C(4),or_nrodoc C(10),;
+	dc_tipo C(4),dc_serie C(4),dc_nrodoc C(10),;
+	documento C(50),;
+	codigo C(15),descri C(150),cod_intemp C(50),grupo C(20),cantidad N(16,6),um C(10),precio_1 N(16,6),precio_2 N(16,6),total_1 N(16,6),total_2 N(16,6))
+***
+*** Analizando Ordenes de Servicio
+SELE tOS2
+SEEK pcProductCode + pcOsNumber
+SCAN WHILE cod_articu + serie + nrodoc = pcProductCode + pcOsNumber
+	SELE tOS1
+	SEEK tOS2.serie + tOS2.nrodoc
+	llSw = (FOUND() AND !tOS1.cod_anula AND tOS1.cod_ordprd = pcOpNumber)
+	IF !llSw
+		LOOP
+	ENDIF
+	SELE tTipSer
+	SEEK tOS1.cod_tipser
+	SELE tTipPro
+	SEEK tTipSer.procodigo
+	= SEEK(tOS2.cod_unid,"tUM")
+	*** Costo de Servicio
+	SELECT (pcCursorName)
+	APPEND BLANK
+	REPLACE os_tipo WITH pcProductType
+	REPLACE os_serie WITH tOS2.serie
+	REPLACE os_nrodoc WITH tOS2.nrodoc
+	REPLACE cod_tipser WITH tOS1.cod_tipser
+	REPLACE des_tipser WITH tOS1.des_tipser
+	REPLACE procodigo WITH tTipSer.procodigo
+	REPLACE prodescri WITH tTipPro.prodescri
+	REPLACE descri WITH "COSTO POR " + tOS1.des_tipser
+	REPLACE cantidad WITH 1
+	REPLACE um WITH tUM.abrevia
+	REPLACE precio_1 WITH tOS2.precio_1
+	REPLACE precio_2 WITH tOS2.precio_2
+	REPLACE total_1 WITH ROUND(&pcCursorName..cantidad * &pcCursorName..precio_1,6)
+	REPLACE total_2 WITH ROUND(&pcCursorName..cantidad * &pcCursorName..precio_2,6)
+	***
+	*** Analizando Ordenes de Requerimiento (Insumos y PT)
+	FOR A = 1 TO 2
+		&& Abriendo Tablas
+		DO CASE
+			CASE A = 1
+				lcTableSiglaOR = "ORDR" && Orden de Requerimiento - Insumo
+				lcTableArticle = "maesinsu"
+			CASE A = 2
+				lcTableSiglaOR = "NOTR" && Orden de Requerimiento - PT
+				lcTableArticle = "maesarti"
+		ENDCASE
+		SELE 0
+		lcTable = lcTableSiglaOR + "1"
+		USE (lcTable) ORDER (lcTable) ALIAS or1 AGAIN
+		SELE 0
+		lcTable = lcTableSiglaOR + "2"
+		USE (lcTable) ORDER seg_ordser ALIAS or2 AGAIN
+		SELE 0
+		USE (lcTableArticle) ORDER codigo ALIAS tProducto AGAIN
+		&&
+		SELE or2
+		SEEK pcProductType + tOS2.serie + tOS2.nrodoc + tOS2.cod_articu
+		SCAN WHILE tip_ordser + ser_ordser + nro_ordser + art_ordser = pcProductType + tOS2.serie + tOS2.nrodoc + tOS2.cod_articu
+			SELE or1
+			SEEK or2.serie + or2.nrodoc
+			llSw = (FOUND() AND !or1.cod_anula)
+			IF !llSw
+				LOOP
+			ENDIF
+			&& Ignorar costo del mismo Producto
+			IF IIF(A = 1,"IN","PT") + or2.cod_articu = pcProductType + pcProductCode
+				LOOP
+			ENDIF
+			&&
+			SELECT tProducto
+			SEEK ALLTRIM(or2.cod_articu)
+			= SEEK(tProducto.cod_unimed,"tUM")
+			&& Analizando Partes de Salidas y Guías de Remisión
+			FOR B = 1 TO 2
+				&& Abriendo Tablas
+				DO CASE
+					CASE B = 1
+						DO CASE
+							CASE A = 1 && Parte de Salida - Insumo
+								lcTableSiglaDS = "PARS"
+							CASE A = 2 && Parte de Salida - PT
+								lcTableSiglaDS = "NOTE"
+						ENDCASE
+					CASE B = 2
+						DO CASE
+							CASE A = 1 && Guía de Remisión - Insumo
+								lcTableSiglaDS = "GUIA"
+							CASE A = 2 && Guía de Remisión - PT
+								lcTableSiglaDS = "REMI"
+						ENDCASE
+				ENDCASE
+				SELE 0
+				lcTable = lcTableSiglaDS + "1"
+				USE (lcTable) ORDER (lcTable) ALIAS sa1 AGAIN
+				SELE 0
+				lcTable = lcTableSiglaDS + "2"
+				USE (lcTable) ORDER docrel ALIAS sa2 AGAIN
+				&&
+				SELE sa2
+				*SEEK lcTableSiglaOR + or2.serie + or2.nrodoc + or2.cod_articu
+				*SCAN WHILE docrel_tip + docrel_ser + docrel_nro + cod_articu = lcTableSiglaOR + or2.serie + or2.nrodoc + or2.cod_articu
+				SEEK lcTableSiglaOR + or2.serie + or2.nrodoc + or2.item
+				SCAN WHILE docrel_tip + docrel_ser + docrel_nro + docrel_itm = lcTableSiglaOR + or2.serie + or2.nrodoc + or2.item
+					SELE sa1
+					SEEK sa2.serie + sa2.nrodoc
+					llSw = (FOUND() AND !sa1.cod_anula AND sa1.cod_moti != "003")
+					IF llSw
+						&& Se respeta la cantidad de la OR (or2.cantidad) ya que este tiene lo que se necesita por producto de la OS
+						&& en cambio en la GR esta agrupado (podria contener la cantidad de varios productos de una OS)
+						*lnCantidad = ROUND(sa2.cantidad / tOS2.cantidad,6)
+						lnCantidad = ROUND(or2.cantidad / tOS2.cantidad,6)
+						&&
+						&& Obtener Precio Promedio actualizado del Kardex
+						STORE 0 TO lnPrePrm1,lnPrePrm2
+						= PRECIO_PROMEDIO_KARDEX(IIF(A = 1,"IN","PT"),sa1.fecha_reg,lcTableSiglaDS,sa2.serie,sa2.nrodoc,sa2.item,@lnPrePrm1,@lnPrePrm2)
+						&&
+						&& Costo de Insumo
+						SELECT (pcCursorName)
+						APPEND BLANK
+						REPLACE os_tipo WITH pcProductType
+						REPLACE os_serie WITH tOS2.serie
+						REPLACE os_nrodoc WITH tOS2.nrodoc
+						REPLACE cod_tipser WITH tOS1.cod_tipser
+						REPLACE des_tipser WITH tOS1.des_tipser
+						REPLACE procodigo WITH tTipSer.procodigo
+						REPLACE prodescri WITH tTipPro.prodescri
+						REPLACE or_tipo WITH lcTableSiglaOR
+						REPLACE or_serie WITH or2.serie
+						REPLACE or_nrodoc WITH or2.nrodoc
+						REPLACE dc_tipo WITH lcTableSiglaDS
+						REPLACE dc_serie WITH sa2.serie
+						REPLACE dc_nrodoc WITH sa2.nrodoc
+						REPLACE documento WITH "(" + IIF(lcTableSiglaOR = "ORDR","IN","PT") + ") O/R " + ALLTRIM(or2.serie) + "-" + or2.nrodoc + " G/R " + ALLTRIM(sa2.serie) + "-" + sa2.nrodoc
+						REPLACE codigo WITH sa2.cod_articu
+						REPLACE descri WITH sa2.des_articu
+						REPLACE cod_intemp WITH sa2.cod_intemp
+						REPLACE grupo WITH IIF(A = 1,"LT: " + sa2.nro_lote,"CAL: " + sa2.cod_calid)
+						REPLACE cantidad WITH lnCantidad
+						REPLACE um WITH tUM.abrevia
+						REPLACE precio_1 WITH lnPrePrm1
+						REPLACE precio_2 WITH lnPrePrm2
+						REPLACE total_1 WITH ROUND(&pcCursorName..cantidad * &pcCursorName..precio_1,6)
+						REPLACE total_2 WITH ROUND(&pcCursorName..cantidad * &pcCursorName..precio_2,6)
+						&&
+					ENDIF
+				ENDSCAN
+				&& Cerrando Tablas
+				USE IN sa1
+				USE IN sa2
+				&&
+			ENDFOR
+			***
+		ENDSCAN
+		&& Cerrando Tablas
+		USE IN or1
+		USE IN or2
+		USE IN tProducto
+		&&
+	ENDFOR
+	***
+ENDSCAN
+SELECT (pcCursorName)
+GO TOP
+***
+*** Cerrando Tablas
+USE IN tOS1
+USE IN tOS2
+USE IN tTipSer
+USE IN tTipPro
+USE IN tUM
+***
+SELECT (pcCursorName)
+IF TYPE("pcVarCost1") = "C" AND !EMPTY(pcVarCost1)
+	SUM total_1 TO &pcVarCost1.
+ENDIF
+IF TYPE("pcVarCost2") = "C" AND !EMPTY(pcVarCost2)
+	SUM total_2 TO &pcVarCost2.
+ENDIF
+IF !llCursorState
+	USE IN (pcCursorName)
+ENDIF
+SELECT(ln_Select)

@@ -1,0 +1,2 @@
+PARAMETERS pc_TipoAlmacen
+DO FORM r_karval WITH pc_TipoAlmacen

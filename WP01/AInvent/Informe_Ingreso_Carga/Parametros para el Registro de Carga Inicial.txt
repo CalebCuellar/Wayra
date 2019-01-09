@@ -1,0 +1,147 @@
+
+
+
+Wayra -  Consideraciones para la Carga Inicial
+---------------------------------------------------
+
+
+
+---------------------------------------------------------------------------
+*) HILADOS: 									ARCHIVO: HILADO - DICIEMBRE 2013.xls	
+   Ingresar Registrar en PARTE DE INGRESO				
+---------------------------------------------------------------------------
+	. MOTIVO:     	Ingreso por Apertura/Saldo Inicial 002
+	. ALMACEN:    	Almacen de Hilado 001          
+	. MONEDA:	SOL	   (Para Todos)		
+	. PROVEEDOR:  	Proveedor (Columna) de la Lista Inventario, archivo excel.  
+	. OP: "."     	Archivo Inventario sin dato de O/P
+	. OC: "."     	Archivo Inventario sin dato de O/C
+	-------------------------------------------------------------------
+        * Codigo del Producto			    DE NO EXISTIR, MARCAR EN LA HOJA EXCEL PARA INFORMAR	
+	* Nro de Lote
+	* Peso Bruto				    VALOR DE SALDO INICIAL = PESO NETO => Sumar 0.03 X Cono = Sera el Peso Bruto
+	* Cantidad de Conos
+	* Peso por Cono = Valor por Defecto 0.03
+	* Precio Unitario Soles			    Inventario es en S/., Se Ingresa Soles Ok	
+	* Observacion: -
+	* GRABAR
+
+
+
+
+
+
+
+---------------------------------------------------------------------------
+*) PRODUCTO TERMINADO  PT							ARCHIVO: LIBRO1.xls
+   Para Ingresar Registrar en:    PARTE DE INGRESO
+---------------------------------------------------------------------------
+	. MOTIVO:	 Ingreso por Apertura/Saldo Inicial 002
+	. ALMACEN:	 Almacen de Productos Terminados 002
+	. MONEDA:        Dol   			  (Para Todos)
+	. PROVEEDOR:	 ANDES TEXTILES PERU SAC  (Para Todos)
+	. OP:		 > Sin No tiene valor, considerar o registrar: "00-OS-OP"
+			 > De lo contrario, copiar dato O/P. del Inventario.
+	. OC:		 "."
+	-------------------------------------------------------------------  
+	* CODIGO ANDES 			  DE NO EXISTIR, MARCAR EN LA HOJA EXCEL PARA INFORMAR	
+	* CALIDAD PT			  El Mismo Codigo Ingresado es para cada Tipo de Calidad	
+	* CANTIDAD INGRESO      	  Stock Final al 31/12
+	* PESO PRODUCTO	 		  Cero
+	* Precio UNITARIO DOL		  Inventario Precio es en Dolares, Se Ingresa en Dolares.		
+	* Observacion: -
+	* GRABAR
+	
+
+
+
+
+
+
+
+---------------------------------------------------------------------------
+*) INEVB									ARCHIVO : LIBRO2.xls	
+   Para Ingresar y Registrar en: Uilizar el mismo Parte de Ingreso de  PT
+---------------------------------------------------------------------------
+	. Motivo			  Ingreso por Apertura/Saldo Inicial 002
+	. Almacen INEVB			  Almacen INEVB
+	. MONEDA:       		  Dol (Para Todos)
+	. Proveedor			  ANDES TEXTILES PERU SAC  (Para Todos)
+	. OP:				  S/OP	
+	. OC:				  S/OC
+	-------------------------------------------------------------------  
+	* CODIGO ANDES 			  DE NO EXISTIR, MARCAR EN LA HOJA EXCEL PARA INFORMAR	
+	* Calidad PT			  1 Primera
+	* Cantidad Ingreso		  Stock Final al 31/12
+	* Peso Producto			  Cero
+	* Precio Unitario Dolares	  Inventario Precio es en Dolares, Se Ingresa en Dolares.
+	* Observacion
+	* Grabar
+
+
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------------------------
+*) TELAS ALMACEN								ARCHIVO : LIBRO3.xls
+   Para Ingresar y Registrar en:
+ 		   Utilizar el mismo Parte de Ingreso de  PT
+---------------------------------------------------------------------------
+	. MOTIVO:	 Ingreso por Apertura/Saldo Inicial 002
+	. ALMACEN:	 Almacen de Tela  009
+	. MONEDA:        Dol   			  (Para Todos)
+	. PROVEEDOR:	 ANDES TEXTILES PERU SAC  (Para Todos)
+	. OP:		 > Sin No tiene valor, considerar o registrar:  "00-OS-OP"
+			 > De lo contrario, copiar dato O/P. del Inventario.
+	. OC:		 "."
+	-------------------------------------------------------------------  
+	* CODIGO TELA ANDES		  DE NO EXISTIR, MARCAR EN LA HOJA EXCEL PARA INFORMAR		< Codigo="Tela Andes" Columna "F" (Del archivo XLS)>
+	* CALIDAD PT			  1 Primera   (Para Todos)
+	* CANTIDAD INGRESO      	  Se Ingresa el valor de la columna "LARGO METROS"		< Columna "N" (Del archivo XLS)>
+	* PESO PRODUCTO	 		  Cero
+	* Precio UNITARIO DOL		  Inventario Precio es en Dolares, Se Ingresa en Dolares.		
+	* Observacion: -
+	* GRABAR
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------------------------
+*) SUMINISTROS									ARCHIVO : INVENTARIO SUMINISTROS DIC13.xls
+   Para Ingresar y Registrar en: 						NOTA: LO INGRESA EL USUARIO (EMPRESA WAYRA)      <<-----
+		   Utilizar el mismo Parte de Ingreso de INSUMOS
+---------------------------------------------------------------------------
+	. MOTIVO:     	  Ingreso por Apertura/Saldo Inicial 002
+	. ALMACEN:    	  Almacen Suministros Diversos 003
+	. MONEDA:	  ?
+	. PROVEEDOR:  	  Proveedor (Columna) de la Lista Inventario.  
+	. OP: 		  ?	
+	. OC:      	  ?
+	-------------------------------------------------------------------
+        * Codigo del Producto			    DE NO EXISTIR, MARCAR EN LA HOJA EXCEL PARA INFORMAR	
+	* Nro de Lote				    ?	
+	* Peso Bruto				    ?
+	* Cantidad de Conos			    ?	
+	* Peso por Cono = Valor por Defecto 0.03	
+	* Precio Unitario 			    ?
+	* Observacion: -
+	* GRABAR
+
+
+
+
+
+

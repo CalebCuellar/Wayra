@@ -1,0 +1,2 @@
+PARAMETERS pc_TipoAlmacen
+DO FORM rpingsal WITH pc_TipoAlmacen

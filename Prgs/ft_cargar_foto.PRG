@@ -1,0 +1,197 @@
+PARAMETERS pcCursorArticulo,pcTablaOrigen,pcTablaDestino,plEliminarFotosOP
+* pcCursorArticulo	-> Cursor con Articulos a Ingresar
+* pcTablaOrigen		-> Cursor con nuevas Fichas Técnicas de Fotos
+* pcTablaDestino	-> Tabla ó Cursor donde se almacenaran las nuevas Fichas Técnicas de Fotos
+* plEliminarFotosOP	-> .T. = Eliminar TODAS las fotos de la OP, .F. = Eliminar SOLO las fotos de los Artículo a Ingresar
+*** Conservando las variables: m.serie y m.nrodoc
+IF TYPE("m.serie") != "U"
+	lcOP_Serie = m.serie
+ENDIF
+IF TYPE("m.nrodoc") != "U"
+	lcOP_Numero = m.nrodoc
+ENDIF
+***
+*** ¿La Tabla Destino existe físicamente?
+llTabla = (SUBSTR(DBF(pcTablaDestino),ATC(".",DBF(pcTablaDestino))+1) = "DBF")
+***
+*CREATE CURSOR cArchivo(nombre C(240))
+SELECT (pcCursorArticulo)
+ln_Recno = IIF(!EOF(),RECNO(),0)
+
+*** Si la Tabla Destino existe físicamente se prepara el Cursor Origen(actualiza correlativo y archivo) para la migración a la Tabla Destino
+IF llTabla
+	
+	lcNameDir = SYS(5) + SYS(2003) + "\TEMP"
+	llMKDIR = DIRECTORY(lcNameDir)
+	*** CREANDO DIRECTORIO
+	IF !llMKDIR
+		MKDIR (lcNameDir)
+	ENDIF
+	***
+	*** ELIMINANDO LOS ARCHIVOS
+	DELETE FILE lcNameDir + "\*.*"
+	***
+	
+	SELECT (pcCursorArticulo)
+	SCAN
+		SCATTER MEMVAR
+		F = 0
+		SELECT (pcTablaOrigen)
+		SEEK m.serie + m.nrodoc + m.cod_articu
+		SCAN WHILE serie + nrodoc + codigo = m.serie + m.nrodoc + m.cod_articu
+			SCATTER MEMVAR
+			F = F + 1
+			lcCodigo = PADL(F,2,"0")
+			*** Con Foto
+			*IF !EMPTY(m.ftftipo)
+			*	lcArchivoOrigen = ALLTRIM(m.ruta)
+			*	lcArchivoDestino = _Carpeta_Foto + "\OP" + PADL(ALLTRIM(m.serie),4,"0") + PADL(ALLTRIM(m.nrodoc),10,"0") +;
+			*		m.codigo + lcCodigo + "." + ALLTRIM(m.ftftipo)
+			*	IF FILE(lcArchivoOrigen)
+			*		*** Copiar nuevo archivo
+			*		COPY FILE (lcArchivoOrigen) TO (lcArchivoDestino)
+			*		INSERT INTO cArchivo VALUES(lcArchivoDestino)
+			*		***
+			*	ELSE
+			*		lcArchivoActual = _Carpeta_Foto + "\OP" + PADL(ALLTRIM(m.serie),4,"0") + PADL(ALLTRIM(m.nrodoc),10,"0") +;
+			*			m.codigo + &pcTablaOrigen..ftfcodigo + "." + ALLTRIM(m.ftftipo)
+			*		IF FILE(lcArchivoActual)
+			*			IF lcArchivoActual != lcArchivoDestino
+			*				*** Actualizar nombre del archivo con el nuevo correlativo
+			*				IF FILE(lcArchivoDestino)
+			*					DELETE FILE (lcArchivoDestino)
+			*				ENDIF
+			*				RENAME (lcArchivoActual) TO (lcArchivoDestino)
+			*				***
+			*			ENDIF
+			*			INSERT INTO cArchivo VALUES(lcArchivoDestino)
+			*		ENDIF
+			*	ENDIF
+			*ENDIF
+			***
+			*** REALIZANDO COPIA DE FOTOS
+			lcOrigen = ALLTRIM(m.ruta)
+			IF FILE(lcOrigen)
+				lcArchivo = SUBSTR(lcOrigen,RAT("\",lcOrigen) + 1)
+				lcDestino = lcNameDir + "\" + lcArchivo
+				COPY FILE (lcOrigen) TO (lcDestino)
+			ENDIF
+			***
+			SELECT (pcTablaOrigen)
+			REPLACE ftfcodigo WITH lcCodigo
+		ENDSCAN
+	ENDSCAN
+ENDIF
+***
+*** Eliminando Fotos de Ficha Técnica en la Tabla Destino
+IF plEliminarFotosOP
+	*** Eliminando TODAS las fotos de la OP
+	SELECT serie,nrodoc FROM (pcCursorArticulo) GROUP BY serie,nrodoc INTO CURSOR curTemp
+	SCAN
+		SCATTER MEMVAR
+		SELECT (pcTablaDestino)
+		SEEK m.serie + m.nrodoc
+		SCAN WHILE serie + nrodoc = m.serie + m.nrodoc
+			IF llTabla
+				*** Eliminando físicamente el Archivo
+				lcArchivo = _Carpeta_Foto + "\OP" + PADL(ALLTRIM(m.serie),4,"0") + PADL(ALLTRIM(m.nrodoc),10,"0") +;
+					&pcTablaDestino..codigo + &pcTablaDestino..ftfcodigo + "." + ALLTRIM(&pcTablaDestino..ftftipo)
+				*SELECT cArchivo
+				*LOCATE FOR nombre = lcArchivo
+				*IF !FOUND()
+				*	DELETE FILE (lcArchivo)
+				*ENDIF
+				IF FILE(lcArchivo)
+					DELETE FILE (lcArchivo)
+				ENDIF
+				***
+			ENDIF
+			SELECT (pcTablaDestino)
+			DELETE
+		ENDSCAN
+	ENDSCAN
+	USE
+	***
+ELSE
+	*** Eliminando SOLO las fotos del Artículo 
+	SELECT (pcCursorArticulo)
+	SCAN
+		SCATTER MEMVAR
+		SELECT (pcTablaDestino)
+		SEEK m.serie + m.nrodoc + m.cod_articu
+		SCAN WHILE serie + nrodoc + codigo = m.serie + m.nrodoc + m.cod_articu
+			IF llTabla
+				*** Eliminando físicamente el Archivo
+				lcArchivo = _Carpeta_Foto + "\OP" + PADL(ALLTRIM(m.serie),4,"0") + PADL(ALLTRIM(m.nrodoc),10,"0") +;
+					&pcTablaDestino..codigo + &pcTablaDestino..ftfcodigo + "." + ALLTRIM(&pcTablaDestino..ftftipo)
+				*SELECT cArchivo
+				*LOCATE FOR nombre = lcArchivo
+				*IF !FOUND()
+				*	DELETE FILE (lcArchivo)
+				*ENDIF
+				IF FILE(lcArchivo)
+					DELETE FILE (lcArchivo)
+				ENDIF
+				***
+			ENDIF
+			SELECT (pcTablaDestino)
+			DELETE
+		ENDSCAN
+	ENDSCAN
+	***
+ENDIF
+***
+*** Registrando Fotos de Ficha Técnica en la Tabla Destino
+SELECT (pcCursorArticulo)
+SCAN
+	SCATTER MEMVAR
+	SELECT (pcTablaOrigen)
+	SEEK m.serie + m.nrodoc + m.cod_articu
+	SCAN WHILE serie + nrodoc + codigo = m.serie + m.nrodoc + m.cod_articu
+		SCATTER MEMVAR
+		
+		
+		IF llTabla
+			*** RESTAURANDO COPIA DE FOTOS
+			IF !EMPTY(m.ruta)
+				lcArchivo = ALLTRIM(SUBSTR(m.ruta,RAT("\",m.ruta) + 1))
+				lcOrigen = lcNameDir + "\" + lcArchivo
+				IF FILE(lcOrigen)
+					lcDestino = _Carpeta_Foto + "\OP" + PADL(ALLTRIM(m.serie),4,"0") + PADL(ALLTRIM(m.nrodoc),10,"0") + m.codigo + m.ftfcodigo + "." + ALLTRIM(m.ftftipo)
+					COPY FILE (lcOrigen) TO (lcDestino)
+				ENDIF
+			ENDIF
+			***
+		ENDIF
+		
+		
+		INSERT INTO (pcTablaDestino) FROM MEMVAR
+	ENDSCAN
+ENDSCAN
+IF ln_Recno > 0
+	GO ln_Recno
+ENDIF
+***
+*USE IN cArchivo
+
+
+IF llTabla
+	*** ELIMINANDO LOS ARCHIVOS
+	DELETE FILE lcNameDir + "\*.*"
+	***
+	*** ELIMINANDO DIRECTORIO
+	IF !llMKDIR
+		RMDIR (lcNameDir)
+	ENDIF
+	***
+ENDIF
+
+
+*** Restableciendo las variables: m.serie y m.nrodoc
+IF TYPE("lcOP_Serie") != "U"
+	m.serie = lcOP_Serie
+ENDIF
+IF TYPE("lcOP_Numero") != "U"
+	m.nrodoc = lcOP_Numero
+ENDIF
+***

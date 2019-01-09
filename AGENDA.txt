@@ -1,0 +1,6 @@
+Agenda para la reunión::
+1) Debido a que se ha realizado ajustes a la pantalla de ingreso de ficha técnica, sería bueno volver a definir la salida de impresión en excel para contemplar dichos cambios. Por favor si pudieran tener una ficha impresa para tomarla como ejemplo.
+2) Explicar el funcionamiento de los campos que se han eliminado (Ficha Técnica: Procesos): Unidad de Medida, Ancho y Largo.
+3) Explicar el nuevo registro de tipos de medida en la maestra de Insumos y la diferencia con el Tipo de Medida.
+4) Definir el alcance de los reportes solicitados en los últimos requerimientos.
+5) Solo se ha migrado la ficha tecnica x op, mas no de la matriz

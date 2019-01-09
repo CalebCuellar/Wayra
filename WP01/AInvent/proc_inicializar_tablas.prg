@@ -1,0 +1,344 @@
+
+
+
+*	----------------------------------------------------------
+*	Proceso para Inicializar (Limpiar) Tablas,  NO MAESTROS
+*	----------------------------------------------------------
+*	 Inicializar Valores en  NUMERADOR DE DOCUMENTOS
+*		PT Parte de Ingreso  001 - 0
+*		PI Parte de Ingreso  001 - 0
+*	----------------------------------------------------------
+
+
+*	WAIT "-A MAES_OP"
+*	USE MAES_OP EXCL
+*	ZAP
+*	REINDEX
+	
+	WAIT "-B ORDP1"
+	USE	ORDP1 EXCL
+	ZAP
+	REINDEX
+	
+	WAIT "-C ORDP2"
+	USE  ORDP2  EXCL
+	ZAP
+	REINDEX
+
+
+
+
+*	DOCUMENTOS ALMACEN INSUMOS
+*	------------------------------------
+*	Partes de Ingreso
+	WAIT "-01 PARI1"
+	USE PARI1 EXCL
+	ZAP
+	REINDEX
+	BROWS
+
+	WAIT "-02 PARI2"
+	USE PARI2 EXCL
+	ZAP
+    REINDEX
+    BROWS
+	
+
+*	Partes de Salida
+	WAIT "-03 PARS1"
+	USE PARS1 EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-04 PARS2"
+	USE PARS2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+
+*	Guia de Remision
+	WAIT "-05 GUIA1"
+	USE GUIA1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-06 GUIA2"
+	USE GUIA2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+
+*	Orden de Compra
+	WAIT "-07 ORDC1"
+	USE ORDC1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-08 ORDC2"
+	USE ORDC2	EXCL	
+	ZAP
+	REINDEX
+	BROWSE
+	
+
+*	Orden de Servicio
+    WAIT "-09 ORDS1"
+	USE ORDS1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-10 ORDS2"
+	USE ORDS2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+
+
+*	Orden de Requerimiento
+	WAIT "-11 ORDR1"
+	USE ORDR1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-12 ORDR2"
+	USE ORDR2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	
+	
+	
+	
+	
+	
+*	DOCUMENTOS ALMACEN PROD. TERMINADOS
+*	------------------------------------
+*	Parte de Ingreso
+	WAIT "-13 NOTI1"
+	USE NOTI1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-14 NOTI2"
+	USE NOTI2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+
+
+*	Parte de Salida
+	WAIT "-15 NOTE1"
+	USE NOTE1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-16 NOTE2"
+	USE NOTE2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	
+	
+*	Guia de Remision
+	WAIT "-17 REMI1"
+	USE REMI1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+
+	WAIT "-18 REMI2"
+	USE REMI2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+
+
+*	Orden de Compra
+	WAIT "-19 NOTC1"	
+	USE NOTC1	EXCL
+	ZAP
+	REINDEX
+	BROWSE	
+	
+	WAIT "-20 NOTC2"
+	USE NOTC2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+
+
+*	Orden de Servicio
+	WAIT "-21 NOTS1"
+	USE NOTS1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-22 NOTS2"
+	USE NOTS2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+
+
+*	Orden de Requerimiento
+	WAIT "-23 NOTR1"
+	USE NOTR1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-24 NOTR2"
+	USE NOTR2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+
+
+
+
+
+
+
+
+*	DOCUMENTOS DE VENTAS
+*	------------------------------------
+*	Factura
+	WAIT "-25 FACT1"
+	USE FACT1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-26 FACT2"
+	USE FACT2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+
+
+
+*	Boleta de Venta
+	WAIT "-27 BOLE1"
+	USE BOLE1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-28 BOLE2"
+	USE BOLE2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	
+
+
+*	Nota de Credito
+	WAIT "-29 NOCR1"
+	USE NOCR1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-30 NOCR2"
+	USE NOCR2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	
+
+*	Nota de Debito
+	WAIT "-31 NODE1"
+	USE NODE1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-32 NODE2"
+	USE NODE2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	
+
+*	Proforma Interna
+	WAIT "-33 GUIS1"
+	USE GUIS1	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	WAIT "-34 GUIS2"
+	USE GUIS2	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	
+	
+
+
+
+
+
+
+
+*	DEL KARDEX Y STOCK  INSUMOS
+*	------------------------------------
+	WAIT "-35 STOCKART"
+	USE STOCKART	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+
+	WAIT "-36 KARDEX2"
+	USE KARDEX2		EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	
+
+
+*	DEL KARDEX Y STOCK  PROD. TERMINADOS
+*	------------------------------------
+	WAIT "-37 STOCK_PT"
+	USE STOCK_PT	EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	
+	WAIT "-38 USE KARDEX3"
+	USE KARDEX3		EXCL
+	ZAP
+	REINDEX
+	BROWSE
+	
+	CLOSE DATABASES
+		
+	WAIT "-- PROCESO FINALIZADO"
+	
+
+

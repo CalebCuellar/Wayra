@@ -1,0 +1,2 @@
+PARAMETERS pc_TipoAlmacen
+DO FORM carg_sal WITH pc_TipoAlmacen
